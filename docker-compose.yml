@@ -12,10 +12,12 @@ services:
     container_name:  imdbpy
     links:
       - imdbpy-database:database
+	  - imdbpy-orientdb:graphdb
     ports:
       - "10080:80"
     depends_on:
       - imdbpy-database
+      - imdbpy-orientdb
       - imdbpy-data-volumes
     volumes_from: 
       - imdbpy-data-volumes
@@ -23,22 +25,42 @@ services:
   imdbpy-database:
     build: 
         context: ./images/database
-    image: lomadi/imdbpy-database
-    container_name:   imdbpy-database
+    image: imdbpy-database
+    container_name:  imdbpy-database
     user: root
     environment:
       - MYSQL_ROOT_PASSWORD=mustnotchange
       - MYSQL_DATABASE=imdbpy
       - MYSQL_USER=imdbpy
       - MYSQL_PASSWORD=mustnotchange
+    depends_on:
+        - imdbpy-data-volumes
     volumes_from: 
       - imdbpy-data-volumes
+
+  imdbpy-orientdb:
+    image: orientdb:2.1.25
+    container_name: imdbpy-orientdb
+    ports:
+      - "2480:2480"
+      - "2424:2424"
+    environment:
+      ES_JAVA_OPTS: '-Xmx8g'
+      ORIENTDB_ROOT_PASSWORD: imdb
+      ORIENTDB_NODE_NAME: 'node1'
     depends_on:
-      - imdbpy-data-volumes
+       - imdbpy-data-volumes
+    volumes_from: 
+       - imdbpy-data-volumes
+    restart: unless-stopped
+    command: "/orientdb/bin/dserver.sh -Dnetwork.maxConcurrentSessions=2000 -Dstorage.diskCache.bufferSize=6000"
 
   imdbpy-data-volumes:
     image: busybox
     container_name: imdbpy-data-volumes
     volumes:
-      - /Users/mue/dockerdata/imdbpy/var/lib/mysql:/var/lib/mysql
+      -  /Users/mue/dockerdata/imdbpy/var/lib/mysql:/var/lib/mysql
+      -  /Users/mue/dockerdata/imdbpy/data/orientdb/config:/orientdb/config
+      -  /Users/mue/dockerdata/imdbpy/data/orientdb/databases:/orientdb/databases 
+      -  /Users/mue/dockerdata/imdbpy/data/orientdb/backup:/orientdb/backup
       
