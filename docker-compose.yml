@@ -1,0 +1,44 @@
+# imdbpy DOCKER COMPOSE
+#
+# start   http://localhost:10080
+# default user: admin / changethepassword
+#
+
+version: '2'
+services:
+
+  imdbpy:
+    image:  lomadi/imdbpy:latest
+    container_name:  imdbpy
+    links:
+      - imdbpy-database:database
+    ports:
+      - "10080:80"
+    depends_on:
+      - imdbpy-database
+      - imdbpy-data-volumes
+    volumes_from: 
+      - imdbpy-data-volumes
+       
+  imdbpy-database:
+    build: 
+        context: ./images/database
+    image: lomadi/imdbpy-database
+    container_name:   imdbpy-database
+    user: root
+    environment:
+      - MYSQL_ROOT_PASSWORD=mustnotchange
+      - MYSQL_DATABASE=imdbpy
+      - MYSQL_USER=imdbpy
+      - MYSQL_PASSWORD=mustnotchange
+    volumes_from: 
+      - imdbpy-data-volumes
+    depends_on:
+      - imdbpy-data-volumes
+
+  imdbpy-data-volumes:
+    image: busybox
+    container_name: imdbpy-data-volumes
+    volumes:
+      - /Users/mue/dockerdata/imdbpy/var/lib/mysql:/var/lib/mysql
+      
